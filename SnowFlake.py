@@ -5,6 +5,7 @@ from time import clock
 
 import numpy as np
 import cv2
+from matplotlib import pyplot as plt
 
 class Particles(object):
     def __init__(self, nr_particles: int, region_width: int, region_height: int, background = 0, particle = 255):
@@ -59,9 +60,9 @@ class Particles(object):
 
 class SnowFlake(object):
     def __init__(self,region_width: int, region_height: int, snowflake_color = 128):
-        self.__snow_flake = np.array([[[region_height//2, region_width//2]]])
+        self.__snow_flake = np.array([[region_height//2, region_width//2]])
         self.__snow_flake_color = snowflake_color
-'''
+
     def accumulate_particles(self, particles: Particles):
         particles_arr = particles.particles
         new_flakes = None
@@ -79,7 +80,7 @@ class SnowFlake(object):
         if new_flakes is not None:
             self.__snow_flake = np.concatenate((self.__snow_flake,new_flakes))
             particles.particles = particles_arr
-            '''
+
 
     def update_canvas(self, canvas, clear=False):
         if clear:
@@ -87,6 +88,9 @@ class SnowFlake(object):
         for particle in self.__snow_flake:
             canvas[particle[0], particle[1]] = self.__snow_flake_color
         return canvas
+
+    def get_particle_count(self):
+        return len(self.__snow_flake)
 
 def create_canvas(width: int, height: int) -> np.array:
     return np.zeros(shape=(height, width), dtype=np.uint8)
@@ -125,6 +129,13 @@ def main():
     frame_rate_time = clock()
     snowflake = SnowFlake(canvas_width, canvas_height)
 
+    plt_data = None
+    #plt.axis([-50,50,0,10000])
+    plt.ion()
+    plt.show()
+    prev_particle_cnt = None
+
+
     # let the particles move
     while True:
         step += 1
@@ -156,6 +167,19 @@ def main():
                 mean,
                 frame_rate
             ))
+
+            snowflake_part_cnt = snowflake.get_particle_count()
+            if not snowflake_part_cnt == prev_particle_cnt:
+                prev_particle_cnt = snowflake_part_cnt
+
+                if plt_data is None:
+                    plt_data = np.array([[snowflake_part_cnt, average_time]])
+                else:
+                    plt_data = np.vstack( (plt_data, np.array([snowflake_part_cnt, average_time])))
+
+                plt.plot(plt_data[:,0], plt_data[:,1])
+                plt.draw()
+                plt.pause(0.001)
 
             cv2.imshow("SnowFlake", canvas)
             key = cv2.waitKey(1)
